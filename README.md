@@ -14,3 +14,4 @@ Steps to run the code -
    
    database - database name you created at step 3 
 6. start server using - node sqldemo.js
+7. You can now send and receive the message through Postman.
