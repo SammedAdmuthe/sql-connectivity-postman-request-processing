@@ -9,8 +9,8 @@ function creatConnection() {
     var connection = sql.createConnection({
         host: "localhost",
         user: "root",
-        password: "your_password",
-        database: "your_db_table"
+        password: "shantivilas@9",
+        database: "ecommerce"
     });
     return connection;
 }
@@ -71,7 +71,7 @@ http.createServer(function (req, res) {
                     if (err) throw err;
                 });
                 // insert logic - insert json parsed object into database.
-                
+                //If product exists? corner cases??
                 var sql = "insert into cart (customer_id,  name, quantity, product_id) values(?, ?, ?, ?)";
                 connection.query(sql, [parsed.customer_id, parsed.name, parsed.quantity, parsed.product_id], function (err, result) {
                     if (err) throw err;
@@ -91,34 +91,33 @@ http.createServer(function (req, res) {
         url = req.url.split("/");
         var id = url[2];
 
-        var connection = creatConnection(); // create database connection
-        connection.connect(function (err) {
-
-            var current_quantity = 0;
-            if (err) throw err; // throws error in case if connection is corrupted/disconnected
-
-
-            // Find the current quanity of particular product id in the cart.
-            // Since we have to increment the quantity buy one çeach time we make PATCH API call write the following logic to get 
-            // the task done
-
-            connection.query("select quantity from cart where product_id = ?", [id], function (err, result) {
-                var temp = JSON.parse(JSON.stringify(result));
-
-                current_quantity = temp[0].quantity; // get current quantity
-
-                var q = current_quantity + 1; // increment the quantity by one each time.
-
-                // update the cart with new increased quantity.
-                var sql = "update cart set quantity = ? where customer_id = ?";
-
-                connection.query(sql, [q, id], function (err, result) {
-                    if (err) throw err;
-                });
-                connection.end();
-            });
-            res.end();
+        //Append data/body which we send via Postman as and when it arrives.
+        req.on('data', function (data) {
+            body += data;
         });
+
+        req.on('end', function () {
+            var parsed = JSON.parse(body); //parse received object from POSTMAN into JSON object so as to extract 
+                                           //table attributes easily
+
+            var connection = creatConnection(); // create database connection
+            connection.connect(function (err) {
+                if (err) throw err; // throws error in case if connection is corrupted/disconnected
+    
+    
+                // Find the current quanity of particular product id in the cart.
+                // Since we have to increment the quantity buy one çeach time we make PATCH API call write the following logic to get 
+                // the task done
+                
+                connection.query("insert into cart values(?,?,1,?) on DUPLICATE KEY update quantity = quantity + 1", [id,parsed.name,parsed.product_id], function (err, result) {
+                    if (err) throw err;
+                    connection.end();
+                });
+                res.end();
+            });
+
+        });
+
 
     }
     else {
