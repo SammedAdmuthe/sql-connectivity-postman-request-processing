@@ -9,8 +9,8 @@ function creatConnection() {
     var connection = sql.createConnection({
         host: "localhost",
         user: "root",
-        password: "shantivilas@9",
-        database: "ecommerce"
+        password: "your_password",
+        database: "your_database_name"
     });
     return connection;
 }
