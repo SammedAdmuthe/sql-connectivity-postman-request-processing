@@ -9,8 +9,8 @@ function creatConnection() {
     var connection = sql.createConnection({
         host: "localhost",
         user: "root",
-        password: "your_root_password",
-        database: "ecommerce"
+        password: "shantivilas@9",
+        database: "shopping"
     });
     return connection;
 }
@@ -96,13 +96,13 @@ function addProduct(req, res) {
 
 
                     //Create table if the table doesnt already exist.
-                    connection.query("create table if not exists cart (customer_id int, name varchar(20), quantity int, product_id int)", function (err, result) { //query SQL database
+                    connection.query("create table if not exists cart_item(cart_item_id int, cart_id int, product_id int, price float, discount int, quantity int, foreign key(cart_id) references cart(cart_id), foreign key(product_id) references product(product_id), primary key(cart_item_id))", function (err, result) { //query SQL database
                         if (err) throw err;
                     });
                     // insert logic - insert json parsed object into database.
                     //If product exists? corner cases??
-                    var sql = "insert into cart (customer_id,  name, quantity, product_id) values(?, ?, ?, ?)";
-                    connection.query(sql, [parsed.customer_id, parsed.name, parsed.quantity, parsed.product_id], function (err, result) {
+                    var sql = "insert into cart (cart_item_id,  cart_id, product_id, price, discount, quantity) values(?, ?, ?, ?, ?, ?)";
+                    connection.query(sql, [parsed.cart_item_id, parsed.cart_id, parsed.product_id, parsed.price, parsed.discount, parsed.quantity], function (err, result) {
                         if (err) {
                             resMsg.code = 503;
                             resMsg.message = "Service Unavailable";
