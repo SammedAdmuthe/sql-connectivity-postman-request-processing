@@ -9,7 +9,7 @@ function creatConnection() {
     var connection = sql.createConnection({
         host: "localhost",
         user: "root",
-        password: "your_root_password",
+        password: "shantivilas@9",
         database: "shopping"
     });
     return connection;
@@ -20,8 +20,15 @@ http.createServer(function (req, res) {
     var url = [];
     url = req.url.split("/"); // split thre url to get value of Id whose record we should get
 
-    if (req.method === 'GET' && url[1] === 'customer') {        
-        listProducts(req, res, url[2]);
+    if (req.method === 'GET') { 
+        var filter = [];
+        filter =url[1].split("?");
+        var key_value = [];
+
+        key_value =filter[1].split("=");
+
+        var key = key_value[0], value = key_value[1];
+        listProducts(req, res, key, value);
     }
     else if (req.method === 'POST') {
         addProduct(req, res);
@@ -35,7 +42,7 @@ http.createServer(function (req, res) {
 
 }).listen(8080);
 
-function listProducts (req, res, customer_id) {
+function listProducts (req, res, key, value) {
     //your custom logic
     // req.on('end', function () {
         let resMsg = {};
@@ -49,7 +56,7 @@ function listProducts (req, res, customer_id) {
                 if (err) throw err; // throws error in case if connection is corrupted/disconnected
 
                 // Get list of all customers from cart where customer_id equals to id we send in get request url.
-                var sql = "select * from cart where customer_id = " + customer_id;
+                var sql = "select * from cart_item where "+ key +" = "+'"'+value+'"'; // we would need to escape a double quote because select query work work if value is string.
 
                 connection.query(sql, function (err, result) { //query SQL database
                     if (err) {
@@ -60,7 +67,7 @@ function listProducts (req, res, customer_id) {
                     else {
                         ret.push(result);
                         res.end(JSON.stringify(ret)); //attach to results of select query to response object and send response back to postman.     
-                    }    
+                    }
 
                 });
                 connection.end();
@@ -76,7 +83,6 @@ function listProducts (req, res, customer_id) {
 function addProduct(req, res) {
 
         //your custom logic
-
         var body = '';
         let resMsg = {};
         //Append data/body which we send via Postman as and when it arrives.
@@ -96,12 +102,12 @@ function addProduct(req, res) {
 
 
                     //Create table if the table doesnt already exist.
-                    connection.query("create table if not exists cart_item(cart_item_id int, cart_id int, product_id int, price float, discount int, quantity int, foreign key(cart_id) references cart(cart_id), foreign key(product_id) references product(product_id), primary key(cart_item_id))", function (err, result) { //query SQL database
+                    connection.query("create table if not exists cart_item(cart_item_id int, cart_id int, product_id int, price float, discount int, quantity int, foreign key(cart_id) references cart(cart_id), foreign key(product_id) references product(product_id), primary key(cart_item_id, cart_id, product_id))", function (err, result) { //query SQL database
                         if (err) throw err;
                     });
                     // insert logic - insert json parsed object into database.
                     //If product exists? corner cases??
-                    var sql = "insert into cart (cart_item_id,  cart_id, product_id, price, discount, quantity) values(?, ?, ?, ?, ?, ?)";
+                    var sql = "insert into cart_item(cart_item_id, cart_id, product_id, price, discount, quantity) values(?, ?, ?, ?, ?, ?)";
                     connection.query(sql, [parsed.cart_item_id, parsed.cart_id, parsed.product_id, parsed.price, parsed.discount, parsed.quantity], function (err, result) {
                         if (err) {
                             resMsg.code = 503;
@@ -149,7 +155,7 @@ function addToCart(req, res, product_id){
                 // Since we have to increment the quantity buy one çeach time we make PATCH API call write the following logic to get 
                 // the task done
 
-                connection.query("insert into cart values(?,?,1,?) on DUPLICATE KEY update quantity = quantity + 1", [id, parsed.name, parsed.product_id], function (err, result) {
+                connection.query("insert into cart_item values(?,?,?,?,?,1) on DUPLICATE KEY update quantity = quantity + 1", [id, parsed.cart_id, parsed.product_id, parsed.price, parsed.discount], function (err, result) {
                     if (err) {
                         resMsg.code = 503;
                         resMsg.message = "Service Unavailable";
