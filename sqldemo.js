@@ -179,6 +179,7 @@ function addToCart(req, res, product_id){
                         else {
                             quantity_in_cart = JSON.parse(JSON.stringify(result));
                             // console.log(quantity_in_cart[0].quantity);
+                            // Logic to compute total cost taking into equation cost, quantity and discount.
                             if (quantity_in_cart[0] === undefined || quantity_in_cart[0].quantity === undefined) {
                                 total_cost = catlog[0].price * (1 - (catlog[0].discount / 100));
                             }
