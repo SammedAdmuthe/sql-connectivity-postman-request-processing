@@ -85,6 +85,7 @@ function addProduct(req, res) {
         var body = '';
         let resMsg = {};
         var catlog;
+        var output= [];
         //Append data/body which we send via Postman as and when it arrives.
         req.on('data', function (data) {
             body += data;
@@ -116,7 +117,7 @@ function addProduct(req, res) {
                         else {
                             catlog = JSON.parse(JSON.stringify(result));
                             // console.log(catlog);
-                            console.log(catlog[0].price);
+                            // console.log(catlog[0].price);
                             var sql = "insert into cart_item(cart_item_id, cart_id, product_id, price, discount, quantity) values(?, ?, ?, ?, ?, ?)";
                             connection.query(sql, [parsed.cart_item_id, parsed.cart_id, parsed.product_id, catlog[0].price, catlog[0].discount, 1], function (err, result) {
                                 if (err) {
@@ -124,14 +125,19 @@ function addProduct(req, res) {
                                     resMsg.message = "Service Unavailable";
                                     resMsg.body = "MySQL server error: CODE = "+ err.code + " SQL of the failed query: "+ err.sql+ " Textual description : "+ err.sqlMessage;
                                 }
-                                connection.end();
+                                connection.query("select * from cart_item where cart_item_id=?", [parsed.cart_item_id], function (err, result_final) {
+                                    if(err) return err;
+                                    output.push(result_final);
+                                    res.end(JSON.stringify(output));
+                                    connection.end();
+
+                                });
 
                             });
                         }
                     });
                     
                 });
-                res.end();
 
             }
             catch (ex) {
@@ -154,6 +160,7 @@ function addToCart(req, res, product_id){
     var total_cost=0;
     var quantity_in_cart;
     var current_quantity = 1;
+    var output = [];
     //Append data/body which we send via Postman as and when it arrives.
     req.on('data', function (data) {
         body += data;
@@ -182,7 +189,7 @@ function addToCart(req, res, product_id){
                     else {
                         catlog = JSON.parse(JSON.stringify(result));
                         // console.log(catlog);
-                        console.log(catlog[0].price);
+                        // console.log(catlog[0].price);
 
                     }
                     connection.query("select * from cart_item where cart_item_id=?", [id], function (err, result) {
@@ -200,7 +207,7 @@ function addToCart(req, res, product_id){
                             else
                                 total_cost = (quantity_in_cart[0].quantity + 1) * catlog[0].price * (1 - (catlog[0].discount) / 100);// multiply quantity by price from catalog to get total cost.
                         }
-                        console.log(total_cost);
+                        // console.log(total_cost);
                     });
                     connection.query("insert into cart_item values(?,?,?,?,?,1) on DUPLICATE KEY update quantity = quantity + 1", [id, parsed.cart_id, parsed.product_id, total_cost, catlog[0].discount], function (err, result) {
                         if (err) {
@@ -208,7 +215,7 @@ function addToCart(req, res, product_id){
                             resMsg.message = "Service Unavailable";
                             resMsg.body = "MySQL server error: CODE = "+ err.code + " SQL of the failed query: "+ err.sql+ " Textual description : "+ err.sqlMessage;
                         }
-                        console.log("Total Cost = ", total_cost);
+                        // console.log("Total Cost = ", total_cost);
                         // update total cost every time.
                         connection.query("update cart_item set price = ? where cart_item_id=?", [total_cost, id], function (err, result) {
                             if (err) {
@@ -216,7 +223,14 @@ function addToCart(req, res, product_id){
                                 resMsg.message = "Service Unavailable";
                                 resMsg.body = "MySQL server error: CODE = " + err.code + " SQL of the failed query: " + err.sql + " Textual description : " + err.sqlMessage;
                             }
-                            connection.end();
+                            connection.query("select * from cart_item where cart_item_id=?", [id], function (err, result_final) {
+                                if(err) return err;
+                                output.push(result_final);
+                                res.end(JSON.stringify(output));
+                                connection.end();
+
+                            });
+                            // connection.end();
 
                         });
                     });
@@ -224,7 +238,7 @@ function addToCart(req, res, product_id){
                     
                 });
                 
-                res.end();
+                // res.end();
             });
         } catch(ex) {
             resMsg.code = 500;
